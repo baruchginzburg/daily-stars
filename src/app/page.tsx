@@ -15,7 +15,6 @@ import {
   RefreshCw, 
   PlusCircle, 
   Trophy, 
-  DollarSign, 
   ChevronRight,
   Shield,
   Activity,
@@ -222,10 +221,10 @@ export default function Home() {
         setSelectedProfile(null);
         setPin("");
       } else {
-        triggerPinError(data.error || "Incorrect passcode");
+        triggerPinError(data.error === "Incorrect passcode" ? "קוד גישה שגוי" : (data.error || "קוד גישה שגוי"));
       }
     } catch (e) {
-      triggerPinError("Login failed. Try again.");
+      triggerPinError("ההתחברות נכשלה. נסה שנית.");
     } finally {
       setIsLoggingIn(false);
     }
@@ -278,7 +277,6 @@ export default function Home() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Success
         setAmount("");
         setDescription("");
         
@@ -286,10 +284,10 @@ export default function Home() {
         await fetchKids();
         await fetchTransactions();
       } else {
-        setTransactionError(data.error || "Failed to record score");
+        setTransactionError(data.error || "הרישום נכשל.");
       }
     } catch (err) {
-      setTransactionError("Server error. Please try again.");
+      setTransactionError("שגיאת שרת. נא לנסות שנית.");
     } finally {
       setIsSubmittingTransaction(false);
     }
@@ -301,7 +299,7 @@ export default function Home() {
     setIsCreatingKid(true);
 
     if (!newKidName || !newKidPin) {
-      setAddKidError("Please fill in all fields.");
+      setAddKidError("נא למלא את כל השדות.");
       setIsCreatingKid(false);
       return;
     }
@@ -324,17 +322,17 @@ export default function Home() {
         setIsAddingKid(false);
         fetchKids();
       } else {
-        setAddKidError(data.error || "Failed to create kid profile.");
+        setAddKidError(data.error === "Profile name already exists" ? "שם פרופיל זה כבר קיים." : (data.error || "יצירת הפרופיל נכשלה."));
       }
     } catch (err) {
-      setAddKidError("Server error. Please try again.");
+      setAddKidError("שגיאת שרת. נא לנסות שנית.");
     } finally {
       setIsCreatingKid(false);
     }
   };
 
   const handleDeleteKid = async (kidId: string, kidName: string) => {
-    if (!confirm(`Are you sure you want to delete ${kidName}'s profile? All their score history will be lost permanently.`)) {
+    if (!confirm(`האם אתה בטוח שברצונך למחוק את הפרופיל של ${kidName}? כל היסטוריית הכוכבים שלו תימחק לצמיתות.`)) {
       return;
     }
 
@@ -351,10 +349,10 @@ export default function Home() {
         fetchTransactions();
       } else {
         const data = await res.json();
-        alert(data.error || "Failed to delete kid profile.");
+        alert(data.error || "מחיקת הפרופיל נכשלה.");
       }
     } catch (e) {
-      alert("Error occurred deleting kid profile.");
+      alert("אירעה שגיאה במחיקת הפרופיל.");
     }
   };
 
@@ -380,21 +378,21 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedProfile, pin, isLoggingIn]);
 
-  // Format date helper
+  // Format date helper to Hebrew
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     const today = new Date();
     const yesterday = new Date();
     yesterday.setDate(today.getDate() - 1);
 
-    const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const timeStr = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
 
     if (d.toDateString() === today.toDateString()) {
-      return `Today at ${timeStr}`;
+      return `היום ב-${timeStr}`;
     } else if (d.toDateString() === yesterday.toDateString()) {
-      return `Yesterday at ${timeStr}`;
+      return `אתמול ב-${timeStr}`;
     } else {
-      return `${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${timeStr}`;
+      return `${d.toLocaleDateString("he-IL", { month: "short", day: "numeric" })} ב-${timeStr}`;
     }
   };
 
@@ -405,7 +403,7 @@ export default function Home() {
       <div className="main-wrapper">
         <div className="spinner-container">
           <div className="spinner" />
-          <h2 style={{ fontSize: "1.2rem", color: "var(--text-secondary)" }}>Loading Daily Stars...</h2>
+          <h2 style={{ fontSize: "1.2rem", color: "var(--text-secondary)" }}>טוען כוכבים יומיים...</h2>
         </div>
       </div>
     );
@@ -419,14 +417,14 @@ export default function Home() {
           {!selectedProfile ? (
             // Select Profile Panel
             <div className="glass-card" style={{ textAlign: "center" }}>
-              <h1 className="profiles-title">🌟 Daily Stars</h1>
+              <h1 className="profiles-title">🌟 כוכבים יומיים</h1>
               <p style={{ color: "var(--text-secondary)", marginBottom: "40px", fontSize: "1.1rem" }}>
-                Who is logging in today?
+                מי מתחבר היום?
               </p>
               
               {profiles.length === 0 ? (
                 <div className="empty-state">
-                  No profiles found. Running seed script is recommended.
+                  לא נמצאו פרופילים. מומלץ להריץ את סקריפט הסיד.
                 </div>
               ) : (
                 <div className="profiles-grid">
@@ -437,10 +435,12 @@ export default function Home() {
                       onClick={() => handleSelectProfile(profile)}
                     >
                       <div className={`profile-avatar ${profile.role.toLowerCase()}`}>
-                        {profile.name.charAt(0).toUpperCase()}
+                        {profile.name}
                       </div>
-                      <span className="profile-name">{profile.name}</span>
-                      <span className="profile-role">{profile.role}</span>
+                      {/* <span className="profile-name">{profile.name}</span> */}
+                      <span className="profile-role">
+                        {profile.role === "ADMIN" ? "מנהל" : "משתמש"}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -453,9 +453,9 @@ export default function Home() {
                 <div className={`pin-avatar ${selectedProfile.role.toLowerCase()}`}>
                   {selectedProfile.name.charAt(0).toUpperCase()}
                 </div>
-                <h2>Enter passcode for {selectedProfile.name}</h2>
+                <h2>הזן קוד עבור {selectedProfile.name}</h2>
                 <p style={{ color: "var(--text-secondary)", marginTop: "6px" }}>
-                  Please enter your 4-digit PIN
+                  נא להזין קוד גישה בן 4 ספרות
                 </p>
               </div>
 
@@ -473,8 +473,8 @@ export default function Home() {
                 </div>
               )}
 
-              {/* PIN Keypad Grid */}
-              <div className="pin-keypad">
+              {/* PIN Keypad Grid (Forced to LTR for standard telephone keypad layout) */}
+              <div className="pin-keypad" dir="ltr">
                 {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map(num => (
                   <button
                     key={num}
@@ -491,7 +491,7 @@ export default function Home() {
                   onClick={handleBackToProfiles}
                   disabled={isLoggingIn}
                 >
-                  Back
+                  חזור
                 </button>
                 
                 <button
@@ -508,7 +508,7 @@ export default function Home() {
                   disabled={isLoggingIn || pin.length === 0}
                   style={{ color: "#a29dbf" }}
                 >
-                  Clear
+                  מחק
                 </button>
               </div>
             </div>
@@ -526,7 +526,7 @@ export default function Home() {
         <div className="header-content">
           <div className="logo-container">
             <span style={{ fontSize: "1.8rem" }}>🌟</span>
-            <span className="logo-text">Daily Stars</span>
+            <span className="logo-text">כוכבים יומיים</span>
           </div>
           
           <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
@@ -535,14 +535,14 @@ export default function Home() {
                 {session.name.charAt(0).toUpperCase()}
               </div>
               <span className="user-badge-name">{session.name}</span>
-              <span className="profile-role" style={{ fontSize: "0.65rem", marginLeft: "4px" }}>
-                {session.role}
+              <span className="profile-role" style={{ fontSize: "0.65rem", marginRight: "6px" }}>
+                {session.role === "ADMIN" ? "מנהל" : "משתמש"}
               </span>
             </div>
             
             <button className="btn btn-secondary" onClick={handleLogout} style={{ padding: "8px 14px", fontSize: "0.9rem" }}>
-              <LogOut size={16} />
-              <span>Log out</span>
+              <LogOut size={16} style={{ transform: "scaleX(-1)" }} />
+              <span>התנתק</span>
             </button>
           </div>
         </div>
@@ -560,7 +560,7 @@ export default function Home() {
                 <div className="flex-between">
                   <h2 style={{ fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}>
                     <Users size={20} style={{ color: "var(--accent-purple)" }} />
-                    Profiles & Balances
+                    פרופילים ויתרות
                   </h2>
                   
                   <button 
@@ -569,22 +569,22 @@ export default function Home() {
                     style={{ padding: "6px 12px", fontSize: "0.85rem" }}
                   >
                     <Plus size={16} />
-                    <span>New Profile</span>
+                    <span>פרופיל חדש</span>
                   </button>
                 </div>
 
                 {isAddingKid && (
                   <form onSubmit={handleAddKid} className="add-kid-panel">
-                    <h3 style={{ fontSize: "1rem", marginBottom: "15px", color: "var(--text-primary)" }}>Add New Kid Profile</h3>
+                    <h3 style={{ fontSize: "1rem", marginBottom: "15px", color: "var(--text-primary)" }}>הוספת פרופיל ילד חדש</h3>
                     {addKidError && (
                       <p style={{ color: "#fb7185", fontSize: "0.85rem", marginBottom: "12px", fontWeight: "600" }}>{addKidError}</p>
                     )}
                     
                     <div className="form-group" style={{ marginBottom: "12px" }}>
-                      <label className="form-label" style={{ fontSize: "0.75rem" }}>Kid's Name</label>
+                      <label className="form-label" style={{ fontSize: "0.75rem" }}>שם הילד</label>
                       <input 
                         type="text" 
-                        placeholder="e.g. Leo" 
+                        placeholder="למשל: ארי" 
                         value={newKidName}
                         onChange={(e) => setNewKidName(e.target.value)}
                         className="form-input"
@@ -594,10 +594,10 @@ export default function Home() {
                     </div>
                     
                     <div className="form-group" style={{ marginBottom: "16px" }}>
-                      <label className="form-label" style={{ fontSize: "0.75rem" }}>4-Digit Login PIN</label>
+                      <label className="form-label" style={{ fontSize: "0.75rem" }}>קוד גישה בן 4 ספרות</label>
                       <input 
                         type="text" 
-                        placeholder="e.g. 5678" 
+                        placeholder="למשל: 5678" 
                         maxLength={4}
                         pattern="\d{4}"
                         value={newKidPin}
@@ -615,7 +615,7 @@ export default function Home() {
                         disabled={isCreatingKid}
                         style={{ flex: 1, padding: "8px 12px", fontSize: "0.9rem" }}
                       >
-                        {isCreatingKid ? "Creating..." : "Save Kid"}
+                        {isCreatingKid ? "יוצר..." : "שמור ילד"}
                       </button>
                       <button 
                         type="button" 
@@ -626,7 +626,7 @@ export default function Home() {
                         }}
                         style={{ padding: "8px 12px", fontSize: "0.9rem" }}
                       >
-                        Cancel
+                        ביטול
                       </button>
                     </div>
                   </form>
@@ -638,7 +638,7 @@ export default function Home() {
                   </div>
                 ) : kids.length === 0 ? (
                   <div className="empty-state">
-                    No kid profiles found. Add one above!
+                    לא נמצאו פרופילי ילדים. הוסף אחד למעלה!
                   </div>
                 ) : (
                   <div className="kids-list">
@@ -665,7 +665,7 @@ export default function Home() {
                           
                           <button 
                             className="delete-profile-btn" 
-                            title="Delete profile"
+                            title="מחק פרופיל"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDeleteKid(kid.id, kid.name);
@@ -686,7 +686,7 @@ export default function Home() {
                   <form onSubmit={handleRecordTransaction}>
                     <h2 style={{ fontSize: "1.3rem", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
                       <Star size={20} style={{ color: "#facc15" }} />
-                      Manage Stars for {selectedKid.name}
+                      ניהול כוכבים עבור {selectedKid.name}
                     </h2>
 
                     {transactionError && (
@@ -694,23 +694,23 @@ export default function Home() {
                     )}
 
                     <div className="form-group">
-                      <label className="form-label">Quick Adjustments</label>
-                      <div className="quick-adjust-grid">
-                        <button type="button" onClick={() => handleQuickAdjust(1)} className="adjust-btn plus">+1 Star</button>
-                        <button type="button" onClick={() => handleQuickAdjust(5)} className="adjust-btn plus">+5 Stars</button>
-                        <button type="button" onClick={() => handleQuickAdjust(10)} className="adjust-btn plus">+10 Stars</button>
-                        <button type="button" onClick={() => handleQuickAdjust(-1)} className="adjust-btn minus">-1 Star</button>
-                        <button type="button" onClick={() => handleQuickAdjust(-5)} className="adjust-btn minus">-5 Stars</button>
-                        <button type="button" onClick={() => handleQuickAdjust(-10)} className="adjust-btn minus">-10 Stars</button>
+                      <label className="form-label">עדכונים מהירים</label>
+                      <div className="quick-adjust-grid" dir="ltr">
+                        <button type="button" onClick={() => handleQuickAdjust(1)} className="adjust-btn plus">+1</button>
+                        <button type="button" onClick={() => handleQuickAdjust(5)} className="adjust-btn plus">+5</button>
+                        <button type="button" onClick={() => handleQuickAdjust(10)} className="adjust-btn plus">+10</button>
+                        <button type="button" onClick={() => handleQuickAdjust(-1)} className="adjust-btn minus">-1</button>
+                        <button type="button" onClick={() => handleQuickAdjust(-5)} className="adjust-btn minus">-5</button>
+                        <button type="button" onClick={() => handleQuickAdjust(-10)} className="adjust-btn minus">-10</button>
                       </div>
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label" htmlFor="amount-input">Custom Star Change</label>
+                      <label className="form-label" htmlFor="amount-input">שינוי מספר כוכבים</label>
                       <input 
                         id="amount-input"
                         type="number" 
-                        placeholder="Use negative numbers to subtract (e.g. -5)" 
+                        placeholder="השתמש במספר שלילי כדי להחסיר (למשל: 5-)" 
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
                         className="form-input"
@@ -719,11 +719,11 @@ export default function Home() {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label" htmlFor="description-input">Description / Reason</label>
+                      <label className="form-label" htmlFor="description-input">תיאור / סיבה</label>
                       <input 
                         id="description-input"
                         type="text" 
-                        placeholder="e.g. Cleaned room, finished homework, helper" 
+                        placeholder="למשל: סידר את החדר, הכין שיעורי בית, התנהג יפה" 
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         className="form-input"
@@ -737,12 +737,12 @@ export default function Home() {
                       disabled={isSubmittingTransaction || !amount || !description}
                       style={{ width: "100%", marginTop: "10px" }}
                     >
-                      {isSubmittingTransaction ? "Saving..." : "Record Score Adjustment"}
+                      {isSubmittingTransaction ? "שומר..." : "שמור עדכון כוכבים"}
                     </button>
                   </form>
                 ) : (
                   <div className="empty-state" style={{ padding: "60px 0" }}>
-                    Select a kid profile on the left to award or subtract stars.
+                    בחר פרופיל ילד מצד ימין כדי להוסיף או להחסיר כוכבים.
                   </div>
                 )}
               </div>
@@ -754,18 +754,18 @@ export default function Home() {
               <div className="flex-between history-section-header">
                 <h2 style={{ fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}>
                   <History size={20} style={{ color: "var(--accent-pink)" }} />
-                  Recent Score Adjustments
+                  יומן עדכונים אחרונים
                 </h2>
                 
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: "600", textTransform: "uppercase" }}>Filter:</span>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: "600" }}>סינון:</span>
                   <select 
                     value={historyFilter} 
                     onChange={(e) => handleFilterChange(e.target.value)}
                     className="form-select"
                     style={{ padding: "6px 36px 6px 12px", fontSize: "0.85rem" }}
                   >
-                    <option value="ALL">All Kids</option>
+                    <option value="ALL">כל הילדים</option>
                     {kids.map(kid => (
                       <option key={kid.id} value={kid.id}>{kid.name}</option>
                     ))}
@@ -779,7 +779,7 @@ export default function Home() {
                 </div>
               ) : transactions.length === 0 ? (
                 <div className="empty-state">
-                  No score transactions logged yet.
+                  אין עסקאות רשומות עדיין.
                 </div>
               ) : (
                 <div className="transaction-list">
@@ -794,7 +794,7 @@ export default function Home() {
                           <span className="transaction-dot" />
                           <span>{formatDate(tx.createdAt)}</span>
                           <span className="transaction-dot" />
-                          <span style={{ opacity: 0.8 }}>by {tx.createdBy?.name}</span>
+                          <span style={{ opacity: 0.8 }}>על ידי {tx.createdBy?.name}</span>
                         </div>
                       </div>
                       
@@ -816,9 +816,9 @@ export default function Home() {
             <div className="glass-card stars-hero-card">
               <div className="stars-spinning-icon">🌟</div>
               <h1 className="balance-count">{session.balance ?? 0}</h1>
-              <div className="balance-label">Total Stars</div>
+              <div className="balance-label">סה"כ כוכבים</div>
               <p className="balance-subtext">
-                Great job, {session.name}! Keep up the excellent work to earn more stars!
+                כל הכבוד, {session.name}! תמשיך לעשות עבודה מצוינת כדי להרוויח עוד כוכבים!
               </p>
             </div>
 
@@ -827,7 +827,7 @@ export default function Home() {
               <div className="flex-between history-section-header">
                 <h2 style={{ fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}>
                   <History size={20} style={{ color: "var(--accent-pink)" }} />
-                  My Star History Log
+                  יומן הכוכבים שלי
                 </h2>
                 
                 <button 
@@ -839,7 +839,7 @@ export default function Home() {
                   style={{ padding: "6px 12px", fontSize: "0.85rem" }}
                 >
                   <RefreshCw size={14} />
-                  <span>Refresh</span>
+                  <span>רענן</span>
                 </button>
               </div>
 
@@ -849,7 +849,7 @@ export default function Home() {
                 </div>
               ) : transactions.length === 0 ? (
                 <div className="empty-state">
-                  No stars earned yet. Ask Dad for task stars!
+                  אין כוכבים עדיין. בקש מאבא כוכבים על ביצוע משימות!
                 </div>
               ) : (
                 <div className="transaction-list">
@@ -860,7 +860,7 @@ export default function Home() {
                         <div className="transaction-meta">
                           <span>{formatDate(tx.createdAt)}</span>
                           <span className="transaction-dot" />
-                          <span style={{ opacity: 0.8 }}>Awarded by {tx.createdBy?.name}</span>
+                          <span style={{ opacity: 0.8 }}>הוענק על ידי {tx.createdBy?.name}</span>
                         </div>
                       </div>
                       

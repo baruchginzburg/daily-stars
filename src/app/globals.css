@@ -909,3 +909,170 @@ h1, h2, h3, h4 {
   animation: starSpin 1.5s infinite linear;
 }
 
+/* Extra Mobile Responsiveness Enhancements */
+@media (max-width: 600px) {
+  /* Global Page container adjustments */
+  .container {
+    padding: 0 10px 30px !important;
+  }
+  
+  .glass-card {
+    padding: 16px !important;
+    border-radius: 16px;
+  }
+  
+  /* Header spacing */
+  .dashboard-header {
+    padding: 12px 14px;
+    margin-bottom: 20px;
+  }
+  
+  .logo-text {
+    font-size: 1.25rem;
+  }
+  
+  .user-badge {
+    padding: 4px 10px;
+    gap: 8px;
+  }
+  
+  .user-badge-name {
+    font-size: 0.8rem;
+  }
+  
+  .profile-role {
+    display: none; /* Hide role on mobile header to save space */
+  }
+  
+  .btn-secondary {
+    padding: 6px 10px !important;
+    font-size: 0.8rem !important;
+  }
+  
+  /* PIN Login Panel adjustments */
+  .profiles-title {
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+  }
+  
+  .profiles-grid {
+    gap: 16px;
+  }
+  
+  .profile-avatar {
+    width: 75px;
+    height: 75px;
+    font-size: 1.6rem;
+  }
+  
+  .profile-name {
+    font-size: 0.95rem;
+  }
+  
+  /* Pin Keypad sizing */
+  .pin-dots {
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+  
+  .pin-dot {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .pin-keypad {
+    gap: 10px;
+  }
+  
+  .pin-key {
+    width: 60px;
+    height: 60px;
+    font-size: 1.25rem;
+  }
+  
+  .pin-key.action {
+    font-size: 0.9rem;
+  }
+  
+  /* Admin controls adjustments */
+  .flex-between h2 {
+    font-size: 1.15rem !important;
+  }
+  
+  .kid-row-card {
+    padding: 12px 14px;
+  }
+  
+  .kid-row-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+  
+  .kid-row-name {
+    font-size: 0.95rem;
+  }
+  
+  .kid-row-balance {
+    padding: 2px 8px;
+  }
+  
+  .kid-row-stars-val {
+    font-size: 0.95rem;
+  }
+  
+  .delete-profile-btn {
+    padding: 6px;
+  }
+  
+  /* Quick adjustments panel grid */
+  .quick-adjust-grid {
+    gap: 8px;
+  }
+  
+  .adjust-btn {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  
+  /* Kid Dashboard adjustments */
+  .stars-hero-card {
+    padding: 30px 15px;
+    margin-bottom: 25px;
+  }
+  
+  .stars-spinning-icon {
+    font-size: 4rem;
+    margin-bottom: 12px;
+  }
+  
+  .balance-count {
+    font-size: 4.5rem;
+  }
+  
+  .balance-label {
+    font-size: 1.1rem;
+  }
+  
+  .balance-subtext {
+    font-size: 0.9rem;
+  }
+  
+  /* Timeline items on mobile */
+  .transaction-item {
+    padding: 12px 14px;
+  }
+  
+  .transaction-desc {
+    font-size: 0.95rem;
+  }
+  
+  .transaction-meta {
+    font-size: 0.75rem;
+  }
+  
+  .transaction-amount-badge {
+    font-size: 1.1rem;
+  }
+}
+

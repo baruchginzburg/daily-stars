@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={outfit.variable}>
+    <html lang="he" dir="rtl" className={outfit.variable}>
       <body>{children}</body>
     </html>
   );
