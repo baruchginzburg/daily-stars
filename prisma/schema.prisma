@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  String        @id @default(uuid())
+  name                String        @unique
+  role                String        // "ADMIN" or "USER"
+  passcode            String        // Simple numeric passcode for login (e.g. 4-digit PIN)
+  balance             Int           @default(0)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  
+  // Transactions received (score updates)
+  transactions        Transaction[] @relation("UserTransactions")
+  
+  // Transactions created by this user (if admin)
+  createdTransactions Transaction[] @relation("AdminTransactions")
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  amount      Int      // Positive for adding, negative for taking
+  description String
+  createdAt   DateTime @default(now())
+  
+  // The kid user who received the score change
+  userId      String
+  user        User     @relation("UserTransactions", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // The admin who performed the transaction
+  createdById String
+  createdBy   User     @relation("AdminTransactions", fields: [createdById], references: [id])
+}
