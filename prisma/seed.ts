@@ -24,6 +24,18 @@ async function main() {
   });
   console.log("Admin user seeded:", admin.name);
 
+  // Upsert Admin (Mom -> אמא)
+  const mom = await prisma.user.upsert({
+    where: { name: "אמא" },
+    update: {},
+    create: {
+      name: "אמא",
+      role: "ADMIN",
+      passcode: "6969",
+    },
+  });
+  console.log("Admin user seeded:", mom.name);
+
   // Upsert Son (Leo -> ארי, starting with 0 stars)
   const kid = await prisma.user.upsert({
     where: { name: "ארי" },
