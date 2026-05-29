@@ -25,6 +25,7 @@ interface Profile {
   id: string;
   name: string;
   role: "ADMIN" | "USER";
+  scoreGoal?: number;
 }
 
 interface User {
@@ -32,6 +33,7 @@ interface User {
   name: string;
   role: "ADMIN" | "USER";
   balance?: number;
+  scoreGoal?: number;
 }
 
 interface Transaction {
@@ -82,6 +84,11 @@ export default function Home() {
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<string>("ALL"); // "ALL" or specific kid ID
 
+  // Goal Settings
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [goalInputVal, setGoalInputVal] = useState("");
+  const [isUpdatingGoal, setIsUpdatingGoal] = useState(false);
+
   // Check login session on mount
   useEffect(() => {
     checkSession();
@@ -98,6 +105,13 @@ export default function Home() {
       fetchProfiles();
     }
   }, [session]);
+
+  // Sync goal input value when selected kid changes
+  useEffect(() => {
+    if (selectedKid) {
+      setGoalInputVal(selectedKid.scoreGoal ? String(selectedKid.scoreGoal) : "");
+    }
+  }, [selectedKid?.id]);
 
   const checkSession = async () => {
     setIsLoadingSession(true);
@@ -353,6 +367,43 @@ export default function Home() {
       }
     } catch (e) {
       alert("אירעה שגיאה במחיקת הפרופיל.");
+    }
+  };
+
+  const handleUpdateGoal = async (targetKidId?: string) => {
+    const kidId = targetKidId || session?.id;
+    if (!kidId) return;
+
+    setIsUpdatingGoal(true);
+    try {
+      const res = await fetch("/api/kids/goal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kidId: kidId,
+          scoreGoal: parseInt(goalInputVal, 10) || 0,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsEditingGoal(false);
+        setGoalInputVal("");
+        // Refresh appropriate states
+        if (session && session.id === kidId) {
+          // If logged in kid updated their own goal
+          setSession(prev => prev ? { ...prev, scoreGoal: data.user.scoreGoal } : null);
+        } else {
+          // If admin updated a kid's goal
+          await fetchKids();
+        }
+      } else {
+        alert(data.error || "עדכון היעד נכשל");
+      }
+    } catch (err) {
+      alert("שגיאת שרת. נא לנסות שנית.");
+    } finally {
+      setIsUpdatingGoal(false);
     }
   };
 
@@ -642,40 +693,66 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="kids-list">
-                    {kids.map(kid => (
-                      <div 
-                        key={kid.id} 
-                        className={`kid-row-card ${selectedKid?.id === kid.id ? "selected" : ""}`}
-                        onClick={() => setSelectedKid(kid)}
-                      >
-                        <div className="kid-row-info">
-                          <div className="kid-row-avatar">
-                            {kid.name.charAt(0).toUpperCase()}
+                    {kids.map(kid => {
+                      const kidGoal = kid.scoreGoal ?? 0;
+                      const kidBalance = kid.balance ?? 0;
+                      const hasKidGoal = kidGoal > 0;
+                      const kidProgress = hasKidGoal
+                        ? Math.min(100, Math.max(0, (kidBalance / kidGoal) * 100))
+                        : 0;
+
+                      return (
+                        <div 
+                          key={kid.id} 
+                          className={`kid-row-card ${selectedKid?.id === kid.id ? "selected" : ""}`}
+                          onClick={() => setSelectedKid(kid)}
+                          style={{ flexDirection: "column", alignItems: "stretch", gap: "8px" }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                            <div className="kid-row-info">
+                              <div className="kid-row-avatar">
+                                {kid.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="kid-row-name">{kid.name}</span>
+                              </div>
+                            </div>
+                            
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                              <div className="kid-row-balance">
+                                <span>🌟</span>
+                                <span className="kid-row-stars-val">{kidBalance}</span>
+                              </div>
+                              
+                              <button 
+                                className="delete-profile-btn" 
+                                title="מחק פרופיל"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteKid(kid.id, kid.name);
+                                }}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
-                          <div>
-                            <span className="kid-row-name">{kid.name}</span>
-                          </div>
+
+                          {hasKidGoal && (
+                            <div className="kid-row-progress-container animate-fade-in">
+                              <div className="kid-row-progress-bg">
+                                <div 
+                                  className="kid-row-progress-fill" 
+                                  style={{ width: `${kidProgress}%` }}
+                                />
+                              </div>
+                              <div className="kid-row-goal-label">
+                                יעד: {kidBalance} / {kidGoal} כוכבים ({Math.round(kidProgress)}%)
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                          <div className="kid-row-balance">
-                            <span>🌟</span>
-                            <span className="kid-row-stars-val">{kid.balance ?? 0}</span>
-                          </div>
-                          
-                          <button 
-                            className="delete-profile-btn" 
-                            title="מחק פרופיל"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteKid(kid.id, kid.name);
-                            }}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -683,7 +760,8 @@ export default function Home() {
               {/* Right Column: Manage Score form */}
               <div className="glass-card">
                 {selectedKid ? (
-                  <form onSubmit={handleRecordTransaction}>
+                  <>
+                    <form onSubmit={handleRecordTransaction}>
                     <h2 style={{ fontSize: "1.3rem", marginBottom: "20px", display: "flex", alignItems: "center", gap: "8px" }}>
                       <Star size={20} style={{ color: "#facc15" }} />
                       ניהול כוכבים עבור {selectedKid.name}
@@ -740,6 +818,56 @@ export default function Home() {
                       {isSubmittingTransaction ? "שומר..." : "שמור עדכון כוכבים"}
                     </button>
                   </form>
+
+                  {/* Goal Management Section for Admin */}
+                  <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--glass-border)" }} className="animate-fade-in">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                      <span className="form-label" style={{ marginBottom: 0, fontWeight: "700" }}>יעד כוכבים לפרופיל</span>
+                      {selectedKid.scoreGoal && selectedKid.scoreGoal > 0 ? (
+                        <span style={{ fontSize: "0.85rem", color: "#facc15", fontWeight: "800" }}>
+                          היעד הנוכחי: {selectedKid.scoreGoal} ({Math.round(Math.min(100, ((selectedKid.balance ?? 0) / selectedKid.scoreGoal) * 100))}%)
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>לא הוגדר יעד</span>
+                      )}
+                    </div>
+
+                    {selectedKid.scoreGoal && selectedKid.scoreGoal > 0 && (
+                      <div className="progress-bar-container" style={{ height: "12px", marginBottom: "16px" }}>
+                        <div
+                          className="progress-bar-fill"
+                          style={{ 
+                            width: `${Math.min(100, Math.max(0, ((selectedKid.balance ?? 0) / selectedKid.scoreGoal) * 100))}%`,
+                            background: (selectedKid.balance ?? 0) >= selectedKid.scoreGoal 
+                              ? "linear-gradient(90deg, #10b981, #34d399)" 
+                              : "linear-gradient(90deg, #facc15, #f59e0b)"
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="הגדר מספר כוכבים ליעד (למשל: 50)"
+                        className="form-input"
+                        style={{ flex: 1, padding: "8px 12px", fontSize: "0.95rem" }}
+                        value={goalInputVal}
+                        onChange={(e) => setGoalInputVal(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ padding: "8px 16px", fontSize: "0.9rem", whiteSpace: "nowrap" }}
+                        onClick={() => handleUpdateGoal(selectedKid.id)}
+                        disabled={isUpdatingGoal}
+                      >
+                        {isUpdatingGoal ? "שומר..." : "שמור יעד"}
+                      </button>
+                    </div>
+                  </div>
+                  </>
                 ) : (
                   <div className="empty-state" style={{ padding: "60px 0" }}>
                     בחר פרופיל ילד מצד ימין כדי להוסיף או להחסיר כוכבים.
@@ -813,14 +941,150 @@ export default function Home() {
           <div style={{ maxWidth: "700px", margin: "0 auto" }}>
             
             {/* Balance Overview Hero Card */}
-            <div className="glass-card stars-hero-card">
-              <div className="stars-spinning-icon">🌟</div>
-              <h1 className="balance-count">{session.balance ?? 0}</h1>
-              <div className="balance-label">סה"כ כוכבים</div>
-              <p className="balance-subtext">
-                כל הכבוד, {session.name}! תמשיך לעשות עבודה מצוינת כדי להרוויח עוד כוכבים!
-              </p>
-            </div>
+            {(() => {
+              const scoreGoal = session.scoreGoal ?? 0;
+              const balance = session.balance ?? 0;
+              const hasGoal = scoreGoal > 0;
+              const isCompleted = hasGoal && balance >= scoreGoal;
+              const progressPercentage = hasGoal 
+                ? Math.min(100, Math.max(0, (balance / scoreGoal) * 100))
+                : 0;
+
+              return (
+                <div className={`glass-card stars-hero-card ${isCompleted ? "goal-completed" : ""}`}>
+                  <div className="stars-spinning-icon">🌟</div>
+                  <h1 className="balance-count">{balance}</h1>
+                  <div className="balance-label">סה"כ כוכבים</div>
+                  <p className="balance-subtext" style={{ marginBottom: hasGoal ? "20px" : "0" }}>
+                    כל הכבוד, {session.name}! תמשיך לעשות עבודה מצוינת כדי להרוויח עוד כוכבים!
+                  </p>
+
+                  {hasGoal ? (
+                    <div className="goal-section animate-fade-in">
+                      <div className="goal-header">
+                        <div className="goal-title">
+                          <span>{isCompleted ? "🏆 היעד הושג!" : "🎯 יעד כוכבים:"}</span>
+                          {isEditingGoal ? (
+                            <div className="goal-inline-form">
+                              <input
+                                type="number"
+                                min="1"
+                                className="goal-input"
+                                value={goalInputVal}
+                                onChange={(e) => setGoalInputVal(e.target.value)}
+                                placeholder="יעד"
+                                disabled={isUpdatingGoal}
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-primary goal-save-btn"
+                                onClick={() => handleUpdateGoal()}
+                                disabled={isUpdatingGoal}
+                              >
+                                {isUpdatingGoal ? "שומר..." : "שמור"}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary goal-cancel-btn"
+                                onClick={() => {
+                                  setIsEditingGoal(false);
+                                  setGoalInputVal("");
+                                }}
+                                disabled={isUpdatingGoal}
+                              >
+                                ביטול
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="goal-fraction">
+                              {balance} / {scoreGoal}
+                            </span>
+                          )}
+                        </div>
+                        {!isEditingGoal && (
+                          <button
+                            className="goal-edit-btn"
+                            onClick={() => {
+                              setIsEditingGoal(true);
+                              setGoalInputVal(String(scoreGoal));
+                            }}
+                          >
+                            ערוך יעד
+                          </button>
+                        )}
+                      </div>
+                      
+                      {!isEditingGoal && (
+                        <>
+                          <div className="progress-bar-container">
+                            <div
+                              className="progress-bar-fill"
+                              style={{ width: `${progressPercentage}%` }}
+                            />
+                          </div>
+                          <div className="goal-status-text">
+                            {isCompleted 
+                              ? `כל הכבוד! עברת את היעד של ${scoreGoal} כוכבים!` 
+                              : `נשארו עוד ${scoreGoal - balance} כוכבים להשגת היעד!`}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="goal-setup-box animate-fade-in">
+                      {isEditingGoal ? (
+                        <div className="goal-inline-form">
+                          <input
+                            type="number"
+                            min="1"
+                            className="goal-input"
+                            value={goalInputVal}
+                            onChange={(e) => setGoalInputVal(e.target.value)}
+                            placeholder="למשל: 50"
+                            disabled={isUpdatingGoal}
+                            autoFocus
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-primary goal-save-btn"
+                            onClick={() => handleUpdateGoal()}
+                            disabled={isUpdatingGoal}
+                          >
+                            {isUpdatingGoal ? "שומר..." : "הגדר"}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secondary goal-cancel-btn"
+                            onClick={() => {
+                              setIsEditingGoal(false);
+                              setGoalInputVal("");
+                            }}
+                            disabled={isUpdatingGoal}
+                          >
+                            ביטול
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>לא הגדרת יעד כוכבים עדיין.</span>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: "6px 12px", fontSize: "0.85rem" }}
+                            onClick={() => {
+                              setIsEditingGoal(true);
+                              setGoalInputVal("");
+                            }}
+                          >
+                            הגדר יעד כוכבים 🎯
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Score Logs */}
             <div className="glass-card">

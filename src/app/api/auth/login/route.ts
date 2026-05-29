@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       name: user.name,
       role: user.role,
       balance: user.balance,
+      scoreGoal: user.scoreGoal,
     };
 
     const cookieStore = await cookies();

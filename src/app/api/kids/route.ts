@@ -31,6 +31,7 @@ export async function GET() {
         name: true,
         role: true,
         balance: true,
+        scoreGoal: true,
         createdAt: true,
       },
       orderBy: { name: "asc" },
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
         name: true,
         role: true,
         balance: true,
+        scoreGoal: true,
       },
     });
 

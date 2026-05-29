@@ -16,6 +16,7 @@ model User {
   role                String        // "ADMIN" or "USER"
   passcode            String        // Simple numeric passcode for login (e.g. 4-digit PIN)
   balance             Int           @default(0)
+  scoreGoal           Int           @default(0)
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   

@@ -23,6 +23,7 @@ export async function GET() {
         name: true,
         role: true,
         balance: true,
+        scoreGoal: true,
       }
     });
 
